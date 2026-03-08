@@ -7,7 +7,7 @@ export interface ListMonitorsOptions {
 }
 
 export async function listMonitors(options: ListMonitorsOptions) {
-  const config = createConfig();
+  const config = await createConfig();
   const api = new v1.MonitorsApi(config);
 
   const params: v1.MonitorsApiListMonitorsRequest = {};

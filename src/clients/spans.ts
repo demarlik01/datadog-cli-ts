@@ -22,7 +22,7 @@ function normalizeLimit(limit: number | undefined, fallback: number): number {
 }
 
 export async function searchSpans(options: SearchSpansOptions) {
-  const config = createConfig();
+  const config = await createConfig();
   const api = new v2.SpansApi(config);
   const { from, to } = resolveTime(options.from, options.to ?? "now");
   const limit = normalizeLimit(options.limit, 25);

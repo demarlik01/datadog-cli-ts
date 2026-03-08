@@ -1,0 +1,24 @@
+import { v1 } from "@datadog/datadog-api-client";
+import { createConfig } from "./config";
+
+export interface ListMonitorsOptions {
+  state?: string;
+  tags?: string;
+}
+
+export async function listMonitors(options: ListMonitorsOptions) {
+  const config = createConfig();
+  const api = new v1.MonitorsApi(config);
+
+  const params: Record<string, unknown> = {};
+
+  if (options.state) {
+    params.groupStates = options.state;
+  }
+
+  if (options.tags) {
+    params.monitorTags = options.tags;
+  }
+
+  return api.listMonitors(params as any);
+}

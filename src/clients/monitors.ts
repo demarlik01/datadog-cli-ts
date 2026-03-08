@@ -10,7 +10,7 @@ export async function listMonitors(options: ListMonitorsOptions) {
   const config = createConfig();
   const api = new v1.MonitorsApi(config);
 
-  const params: Record<string, unknown> = {};
+  const params: v1.MonitorsApiListMonitorsRequest = {};
 
   if (options.state) {
     params.groupStates = options.state;
@@ -20,5 +20,5 @@ export async function listMonitors(options: ListMonitorsOptions) {
     params.monitorTags = options.tags;
   }
 
-  return api.listMonitors(params as any);
+  return api.listMonitors(params);
 }

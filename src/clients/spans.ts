@@ -30,14 +30,14 @@ export async function searchSpans(options: SearchSpansOptions) {
   return api.listSpans({
     body: {
       data: {
-        type: "search_request" as any,
+        type: "search_request" as v2.SpansListRequestType,
         attributes: {
           filter: {
             query: options.query,
             from,
             to,
           },
-          sort: "timestamp" as any,
+          sort: "timestamp" as v2.SpansSort,
           page: {
             limit,
           },

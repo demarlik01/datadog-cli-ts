@@ -34,7 +34,7 @@ export async function searchLogs(options: SearchLogsOptions) {
         from,
         to,
       },
-      sort: "timestamp" as any,
+      sort: "timestamp" as v2.LogsSort,
       page: {
         limit,
       },

@@ -1,14 +1,7 @@
 import { Command } from "commander";
 import { listEvents } from "../clients/events";
 import { handleError } from "../utils/errors";
-
-function parseLimit(input: string): number {
-  const value = Number.parseInt(input, 10);
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error("`--limit`은 1 이상의 정수여야 합니다.");
-  }
-  return value;
-}
+import { parsePositiveInt } from "../utils/number";
 
 export const eventsCommand = new Command("events").description("Datadog Events 조회");
 
@@ -25,7 +18,7 @@ eventsCommand
         from: options.from,
         to: options.to,
         query: options.query,
-        limit: parseLimit(options.limit)
+        limit: parsePositiveInt(options.limit, "--limit")
       });
 
       console.log(JSON.stringify(result, null, 2));

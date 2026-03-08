@@ -27,15 +27,15 @@ export async function listEvents(options: ListEventsOptions) {
   const { from, to } = resolveTime(options.from, options.to ?? "now");
   const limit = normalizeLimit(options.limit, 25);
 
-  const params: Record<string, unknown> = {
+  const params: v2.EventsApiListEventsRequest = {
     filterFrom: from,
     filterTo: to,
-    pageLimit: limit
+    pageLimit: limit,
   };
 
   if (options.query) {
     params.filterQuery = options.query;
   }
 
-  return api.listEvents(params as any);
+  return api.listEvents(params);
 }

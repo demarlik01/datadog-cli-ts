@@ -1,14 +1,7 @@
 import { Command } from "commander";
 import { searchSpans } from "../clients/spans";
 import { handleError } from "../utils/errors";
-
-function parseLimit(input: string): number {
-  const value = Number.parseInt(input, 10);
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error("`--limit`은 1 이상의 정수여야 합니다.");
-  }
-  return value;
-}
+import { parsePositiveInt } from "../utils/number";
 
 export const tracesCommand = new Command("traces").description("Datadog Traces 조회");
 
@@ -25,7 +18,7 @@ tracesCommand
         query: options.query,
         from: options.from,
         to: options.to,
-        limit: parseLimit(options.limit)
+        limit: parsePositiveInt(options.limit, "--limit")
       });
 
       console.log(JSON.stringify(result, null, 2));
@@ -47,7 +40,7 @@ tracesCommand
         query: `trace_id:${traceId}`,
         from: options.from,
         to: options.to,
-        limit: parseLimit(options.limit)
+        limit: parsePositiveInt(options.limit, "--limit")
       });
 
       console.log(JSON.stringify(result, null, 2));

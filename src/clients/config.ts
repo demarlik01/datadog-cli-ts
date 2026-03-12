@@ -1,22 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
 import { client } from "@datadog/datadog-api-client";
 import { getValidAccessToken, loadTokens } from "../auth/token.js";
 
-const CONFIG_DIR_NAME = "dd-cli";
+import { getConfigDir } from "../utils/paths.js";
 
 export interface ApiKeyConfig {
   api_key: string;
   app_key: string;
   site: string;
-}
-
-function getConfigDir(): string {
-  const base = process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config");
-  const dir = path.join(base, CONFIG_DIR_NAME);
-  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  return dir;
 }
 
 function getConfigFilePath(): string {
@@ -36,7 +28,11 @@ export function loadApiKeyConfig(): ApiKeyConfig | null {
       };
     }
     return null;
-  } catch {
+  } catch (err: unknown) {
+    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+      return null;
+    }
+    console.error(`설정 파일 읽기 실패 (${filePath}): ${err instanceof Error ? err.message : err}`);
     return null;
   }
 }

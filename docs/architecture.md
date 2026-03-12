@@ -224,7 +224,7 @@ All 10 scopes are read-only. No write operations are performed.
 
 ## Output Principles
 
-**JSON only.** All output uses `JSON.stringify(result, null, 2)` to stdout.
+**JSON only.** Data commands output `JSON.stringify(result, null, 2)` to stdout. Auth commands use compact JSON (`JSON.stringify(obj)`).
 
 - Easy for agents to parse
 - Composable with `jq`

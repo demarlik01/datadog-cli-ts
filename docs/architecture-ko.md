@@ -224,7 +224,7 @@ error_tracking_read
 
 ## 출력 원칙
 
-**JSON only.** 모든 출력은 `JSON.stringify(result, null, 2)`로 stdout.
+**JSON only.** 데이터 명령은 `JSON.stringify(result, null, 2)`로 stdout 출력. Auth 명령은 compact JSON (`JSON.stringify(obj)`) 사용.
 
 - 에이전트가 파싱하기 쉬움
 - jq로 후처리 가능

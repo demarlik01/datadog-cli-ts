@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
 
 export interface TokenSet {
   access_token: string;
@@ -20,14 +19,7 @@ export interface ClientCredentials {
   site: string;
 }
 
-const CONFIG_DIR_NAME = "dd-cli";
-
-function getConfigDir(): string {
-  const base = process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config");
-  const dir = path.join(base, CONFIG_DIR_NAME);
-  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  return dir;
-}
+import { getConfigDir } from "../utils/paths.js";
 
 function sanitizeSite(site: string): string {
   return site.replace(/\./g, "_");

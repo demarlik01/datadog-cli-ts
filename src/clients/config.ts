@@ -1,11 +1,61 @@
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 import { client } from "@datadog/datadog-api-client";
 import { getValidAccessToken, loadTokens } from "../auth/token.js";
 
-function getSite(): string {
-  return process.env.DD_SITE ?? "datadoghq.com";
+const CONFIG_DIR_NAME = "dd-cli";
+
+export interface ApiKeyConfig {
+  api_key: string;
+  app_key: string;
+  site: string;
 }
 
-function hasApiKeys(): boolean {
+function getConfigDir(): string {
+  const base = process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config");
+  const dir = path.join(base, CONFIG_DIR_NAME);
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  return dir;
+}
+
+function getConfigFilePath(): string {
+  return path.join(getConfigDir(), "config.json");
+}
+
+export function loadApiKeyConfig(): ApiKeyConfig | null {
+  const filePath = getConfigFilePath();
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8");
+    const data = JSON.parse(raw) as Partial<ApiKeyConfig>;
+    if (data.api_key && data.app_key) {
+      return {
+        api_key: data.api_key,
+        app_key: data.app_key,
+        site: data.site ?? "datadoghq.com",
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveApiKeyConfig(config: ApiKeyConfig): void {
+  const filePath = getConfigFilePath();
+  fs.writeFileSync(filePath, JSON.stringify(config, null, 2), { mode: 0o600 });
+  fs.chmodSync(filePath, 0o600);
+}
+
+export function getConfigFilePaths(): { dir: string; file: string } {
+  return { dir: getConfigDir(), file: getConfigFilePath() };
+}
+
+function getSite(): string {
+  return process.env.DD_SITE ?? loadApiKeyConfig()?.site ?? "datadoghq.com";
+}
+
+function hasEnvApiKeys(): boolean {
   return Boolean(process.env.DD_API_KEY && process.env.DD_APPLICATION_KEY);
 }
 
@@ -13,16 +63,30 @@ function hasOAuthTokens(site: string): boolean {
   return loadTokens(site) !== null;
 }
 
+export type AuthSource = "env_vars" | "config_file" | "oauth" | "none";
+
 /**
- * 설정을 생성한다.
- * OAuth 토큰 사용 시 자동 갱신이 필요하므로 비동기 함수.
+ * Returns which auth source would be used (without creating a full config).
+ */
+export function getAuthSource(site?: string): AuthSource {
+  const resolvedSite = site ?? getSite();
+  if (hasEnvApiKeys()) return "env_vars";
+  if (loadApiKeyConfig()) return "config_file";
+  if (hasOAuthTokens(resolvedSite)) return "oauth";
+  return "none";
+}
+
+/**
+ * Creates SDK configuration.
+ * Async because OAuth token refresh may be needed.
  *
- * 우선순위: 환경변수(API Key) > OAuth 토큰
+ * Priority: Environment variables (API Key) > Config file (API Key) > OAuth tokens > Error
  */
 export async function createConfig(): Promise<client.Configuration> {
   const site = getSite();
 
-  if (hasApiKeys()) {
+  // 1. Environment variables
+  if (hasEnvApiKeys()) {
     const config = client.createConfiguration({
       authMethods: {
         apiKeyAuth: process.env.DD_API_KEY,
@@ -33,6 +97,20 @@ export async function createConfig(): Promise<client.Configuration> {
     return config;
   }
 
+  // 2. Config file
+  const fileConfig = loadApiKeyConfig();
+  if (fileConfig) {
+    const config = client.createConfiguration({
+      authMethods: {
+        apiKeyAuth: fileConfig.api_key,
+        appKeyAuth: fileConfig.app_key,
+      },
+    });
+    config.setServerVariables({ site });
+    return config;
+  }
+
+  // 3. OAuth tokens
   if (hasOAuthTokens(site)) {
     const accessToken = await getValidAccessToken(site);
     const config = client.createConfiguration({
@@ -45,6 +123,7 @@ export async function createConfig(): Promise<client.Configuration> {
   }
 
   throw new Error(
-    "인증 정보가 없습니다. DD_API_KEY/DD_APPLICATION_KEY 환경변수를 설정하거나 `dd-cli auth login`을 실행하세요.",
+    "No credentials found. Set DD_API_KEY/DD_APPLICATION_KEY environment variables, " +
+    "run `dd-cli auth configure`, or run `dd-cli auth login`.",
   );
 }

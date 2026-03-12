@@ -48,13 +48,13 @@ datadog-cli-ts/
 │   │   ├── scopes.ts          # OAuth scope definitions (read-only)
 │   │   └── token.ts           # Token storage, refresh, and validation
 │   ├── commands/              # Subcommand definitions
-│   │   ├── auth.ts            # dd-cli auth login/status/logout
+│   │   ├── auth.ts            # dd-cli auth login/status/logout/configure
 │   │   ├── logs.ts            # dd-cli logs search
 │   │   ├── traces.ts          # dd-cli traces search/get
 │   │   ├── events.ts          # dd-cli events list
 │   │   └── monitors.ts        # dd-cli monitors list
 │   ├── clients/               # Datadog SDK wrappers
-│   │   ├── config.ts          # Auth/config initialization (async, supports OAuth + API Key)
+│   │   ├── config.ts          # Auth/config initialization + API Key config file I/O
 │   │   ├── logs.ts            # LogsApi wrapper
 │   │   ├── spans.ts           # SpansApi wrapper
 │   │   ├── events.ts          # EventsApi wrapper
@@ -77,89 +77,24 @@ datadog-cli-ts/
 
 One file per resource. Defines Commander.js subcommands + option parsing + client calls + JSON stdout.
 
-```typescript
-// src/commands/logs.ts
-import { Command } from "commander";
-import { searchLogs } from "../clients/logs";
-import { handleError } from "../utils/errors";
-import { parsePositiveInt } from "../utils/number";
-
-export const logsCommand = new Command("logs").description("Datadog Logs 조회");
-
-logsCommand
-  .command("search")
-  .option("--query <query>", "검색 쿼리", "*")
-  .option("--from <from>", "시작 시간", "1h")
-  .option("--to <to>", "종료 시간", "now")
-  .option("--limit <n>", "결과 수 제한", "25")
-  .action(async (options) => {
-    try {
-      const result = await searchLogs({
-        query: options.query,
-        from: options.from,
-        to: options.to,
-        limit: parsePositiveInt(options.limit, "--limit"),
-      });
-      console.log(JSON.stringify(result, null, 2));
-    } catch (error) {
-      handleError(error);
-    }
-  });
-```
-
 **Pattern:** To add a new resource, create one file each in `commands/` and `clients/`, then register with `.addCommand()` in `bin/dd-cli.ts`.
 
 ### Clients Layer (`src/clients/`)
 
 Thin wrappers around the Datadog SDK. No business logic — just SDK calls.
 
+**`config.ts`** is the central configuration module:
+
 ```typescript
-// src/clients/config.ts
-import { client } from "@datadog/datadog-api-client";
-import { getValidAccessToken, loadTokens } from "../auth/token.js";
-
-/**
- * Creates SDK configuration.
- * Async because OAuth token refresh may be needed.
- *
- * Priority: Environment variables (API Key) > OAuth tokens > Error
- */
 export async function createConfig(): Promise<client.Configuration> {
-  const site = process.env.DD_SITE ?? "datadoghq.com";
-
-  // 1. API Key (from environment variables)
-  if (process.env.DD_API_KEY && process.env.DD_APPLICATION_KEY) {
-    const config = client.createConfiguration({
-      authMethods: {
-        apiKeyAuth: process.env.DD_API_KEY,
-        appKeyAuth: process.env.DD_APPLICATION_KEY,
-      },
-    });
-    config.setServerVariables({ site });
-    return config;
-  }
-
-  // 2. OAuth token (from ~/.config/dd-cli/)
-  if (loadTokens(site)) {
-    const accessToken = await getValidAccessToken(site);
-    const config = client.createConfiguration({
-      authMethods: {
-        AuthZ: { accessToken },
-      },
-    });
-    config.setServerVariables({ site });
-    return config;
-  }
-
-  // 3. No credentials
-  throw new Error(
-    "인증 정보가 없습니다. DD_API_KEY/DD_APPLICATION_KEY 환경변수를 설정하거나 " +
-    "`dd-cli auth login`을 실행하세요."
-  );
+  // 1. Environment variables (DD_API_KEY + DD_APPLICATION_KEY)
+  // 2. Config file (~/.config/dd-cli/config.json)
+  // 3. OAuth tokens (~/.config/dd-cli/tokens_{site}.json)
+  // 4. Error with guidance
 }
 ```
 
-**Key change:** `createConfig()` is now `async` because OAuth token auto-refresh requires an async call. All client functions `await createConfig()`.
+It also provides `loadApiKeyConfig()`, `saveApiKeyConfig()`, and `getConfigFilePaths()` for the `auth configure` command.
 
 ### Auth Layer (`src/auth/`)
 
@@ -169,9 +104,24 @@ Implements OAuth2 with DCR (Dynamic Client Registration) + PKCE (S256).
 
 ```
 1. Environment variables (DD_API_KEY + DD_APPLICATION_KEY) → API Key auth
-2. OAuth tokens (~/.config/dd-cli/tokens_{site}.json)    → OAuth2 auth (auto-refresh)
-3. Neither available                                      → Error with guidance
+2. Config file (~/.config/dd-cli/config.json)              → API Key auth (persisted)
+3. OAuth tokens (~/.config/dd-cli/tokens_{site}.json)      → OAuth2 auth (auto-refresh)
+4. None available                                          → Error with guidance
 ```
+
+#### `auth configure` Command
+
+Saves API Key credentials to a config file for persistent, non-environment-variable auth.
+
+```
+dd-cli auth configure                              # Interactive (prompts for keys)
+dd-cli auth configure --api-key X --app-key Y      # Non-interactive
+dd-cli auth configure show                         # Display current config (keys masked)
+```
+
+- Config file: `$XDG_CONFIG_HOME/dd-cli/config.json` (defaults to `~/.config/dd-cli/config.json`)
+- File permissions: `0o600`
+- Stored fields: `api_key`, `app_key`, `site`
 
 #### OAuth2 Flow
 
@@ -235,13 +185,15 @@ error_tracking_read
 
 All 10 scopes are read-only. No write operations are performed.
 
-#### Token Storage
+#### Token & Config Storage
 
 | File | Path | Content |
 |------|------|---------|
-| Tokens | `~/.config/dd-cli/tokens_{site}.json` | `access_token`, `refresh_token`, `expires_in`, `issued_at`, `scope` |
-| Client | `~/.config/dd-cli/client_{site}.json` | `client_id`, `client_name`, `redirect_uris`, `registered_at` |
+| API Key Config | `~/.config/dd-cli/config.json` | `api_key`, `app_key`, `site` |
+| OAuth Tokens | `~/.config/dd-cli/tokens_{site}.json` | `access_token`, `refresh_token`, `expires_in`, `issued_at`, `scope` |
+| OAuth Client | `~/.config/dd-cli/client_{site}.json` | `client_id`, `client_name`, `redirect_uris`, `registered_at` |
 
+- All files respect `XDG_CONFIG_HOME` (defaults to `~/.config`)
 - File permissions: `0o600` (owner read/write only)
 - Directory permissions: `0o700`
 - Site name is sanitized (`.` → `_`): e.g., `tokens_datadoghq_com.json`
@@ -257,9 +209,6 @@ All 10 scopes are read-only. No write operations are performed.
 
 **time.ts** — Relative time parsing:
 - `"30m"` → `new Date(now - 30min).toISOString()`
-- `"1h"` → `new Date(now - 1hour).toISOString()`
-- `"24h"` → `new Date(now - 24hours).toISOString()`
-- `"7d"` → `new Date(now - 7days).toISOString()`
 - Supports: `s` (seconds), `m` (minutes), `h` (hours), `d` (days), `w` (weeks)
 - ISO strings pass through as-is
 - `"now"` → current time
@@ -272,7 +221,6 @@ All 10 scopes are read-only. No write operations are performed.
 
 **number.ts** — Numeric input validation:
 - `parsePositiveInt(input, name)` — validates that input is a positive integer
-- Used by commands to validate `--limit` options
 
 ## Output Principles
 

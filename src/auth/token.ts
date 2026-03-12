@@ -23,7 +23,8 @@ export interface ClientCredentials {
 const CONFIG_DIR_NAME = "dd-cli";
 
 function getConfigDir(): string {
-  const dir = path.join(os.homedir(), ".config", CONFIG_DIR_NAME);
+  const base = process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config");
+  const dir = path.join(base, CONFIG_DIR_NAME);
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   return dir;
 }
@@ -38,6 +39,7 @@ export function saveTokens(site: string, tokens: TokenSet): void {
     `tokens_${sanitizeSite(site)}.json`,
   );
   fs.writeFileSync(filePath, JSON.stringify(tokens, null, 2), { mode: 0o600 });
+  fs.chmodSync(filePath, 0o600);
 }
 
 export function loadTokens(site: string): TokenSet | null {
@@ -72,6 +74,7 @@ export function saveClient(site: string, creds: ClientCredentials): void {
     `client_${sanitizeSite(site)}.json`,
   );
   fs.writeFileSync(filePath, JSON.stringify(creds, null, 2), { mode: 0o600 });
+  fs.chmodSync(filePath, 0o600);
 }
 
 export function loadClient(site: string): ClientCredentials | null {

@@ -1,12 +1,23 @@
 {
   "name": "datadog-cli-ts",
   "version": "0.1.0",
-  "description": "TypeScript CLI wrapper for Datadog API",
-  "private": true,
+  "description": "TypeScript CLI wrapper for Datadog API — logs, traces, events, monitors with OAuth2 & API key auth",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/demarlik01/datadog-cli-ts.git"
+  },
+  "keywords": ["datadog", "cli", "apm", "traces", "logs", "monitors", "observability", "typescript"],
   "bin": {
     "dd-cli": "bin/dd-cli.ts"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "README-ko.md"
+  ],
   "scripts": {
     "start": "tsx bin/dd-cli.ts",
     "typecheck": "tsc --noEmit"
@@ -14,11 +25,14 @@
   "dependencies": {
     "@datadog/datadog-api-client": "^1.53.0",
     "commander": "^14.0.1",
-    "open": "^11.0.0"
+    "open": "^11.0.0",
+    "tsx": "^4.19.3"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
-    "tsx": "^4.19.3",
     "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

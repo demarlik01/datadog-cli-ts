@@ -7,13 +7,19 @@ Datadog API를 래핑하는 TypeScript CLI. AI 에러 분석 에이전트가 bas
 ## 설치
 
 ```bash
-git clone https://github.com/your-org/datadog-cli-ts.git
-cd datadog-cli-ts
-pnpm install
-pnpm link --global   # 'dd-cli' 명령어로 사용
+npm install -g datadog-cli-ts
 ```
 
-Node.js >= 18 및 [tsx](https://github.com/privatenumber/tsx) 필요.
+또는 소스에서 빌드:
+
+```bash
+git clone https://github.com/demarlik01/datadog-cli-ts.git
+cd datadog-cli-ts
+pnpm install
+pnpm link --global
+```
+
+Node.js >= 18 필요.
 
 ## 인증
 

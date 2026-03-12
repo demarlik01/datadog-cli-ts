@@ -7,13 +7,19 @@ TypeScript CLI wrapper for the Datadog API. Designed for AI error analysis agent
 ## Installation
 
 ```bash
-git clone https://github.com/your-org/datadog-cli-ts.git
-cd datadog-cli-ts
-pnpm install
-pnpm link --global   # use as 'dd-cli'
+npm install -g datadog-cli-ts
 ```
 
-Requires Node.js >= 18 and [tsx](https://github.com/privatenumber/tsx).
+Or build from source:
+
+```bash
+git clone https://github.com/demarlik01/datadog-cli-ts.git
+cd datadog-cli-ts
+pnpm install
+pnpm link --global
+```
+
+Requires Node.js >= 18.
 
 ## Authentication
 

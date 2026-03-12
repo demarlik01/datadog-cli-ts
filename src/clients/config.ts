@@ -29,7 +29,7 @@ export async function createConfig(): Promise<client.Configuration> {
         appKeyAuth: process.env.DD_APPLICATION_KEY,
       },
     });
-    client.setServerVariables(config, { site });
+    config.setServerVariables({ site });
     return config;
   }
 
@@ -40,7 +40,7 @@ export async function createConfig(): Promise<client.Configuration> {
         AuthZ: { accessToken },
       },
     });
-    client.setServerVariables(config, { site });
+    config.setServerVariables({ site });
     return config;
   }
 

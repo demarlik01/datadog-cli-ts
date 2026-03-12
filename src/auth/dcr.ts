@@ -17,7 +17,9 @@ async function registerNewClient(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      client_name: "dd-cli",
+      // Datadog DCR은 이 client_name만 허용 (pup CLI와 동일).
+      // ref: https://github.com/datadog-labs/pup/blob/main/src/auth/dcr.rs
+      client_name: "datadog-api-claude-plugin",
       redirect_uris: [redirectUri],
       grant_types: ["authorization_code", "refresh_token"],
     }),

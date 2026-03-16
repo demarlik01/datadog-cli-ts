@@ -38,7 +38,7 @@
 ```
 datadog-cli-ts/
 ├── bin/
-│   └── dd-cli.ts              # Entrypoint (#!/usr/bin/env tsx)
+│   └── dd-cli.ts              # Entrypoint (built via tsup → dist/dd-cli.js)
 ├── src/
 │   ├── auth/                  # OAuth2 authentication
 │   │   ├── callback.ts        # Local HTTP callback server for OAuth redirect

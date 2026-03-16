@@ -38,7 +38,7 @@
 ```
 datadog-cli-ts/
 ├── bin/
-│   └── dd-cli.ts              # 엔트리포인트 (#!/usr/bin/env tsx)
+│   └── dd-cli.ts              # 엔트리포인트 (tsup으로 빌드 → dist/dd-cli.js)
 ├── src/
 │   ├── auth/                  # OAuth2 인증
 │   │   ├── callback.ts        # OAuth 리다이렉트용 로컬 HTTP 콜백 서버

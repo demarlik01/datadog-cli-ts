@@ -1,5 +1,3 @@
-#!/usr/bin/env tsx
-
 import { Command } from "commander";
 import { logsCommand } from "../src/commands/logs";
 import { tracesCommand } from "../src/commands/traces";

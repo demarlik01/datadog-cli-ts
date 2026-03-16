@@ -8,28 +8,41 @@
     "type": "git",
     "url": "https://github.com/demarlik01/datadog-cli-ts.git"
   },
-  "keywords": ["datadog", "cli", "apm", "traces", "logs", "monitors", "observability", "typescript"],
+  "keywords": [
+    "datadog",
+    "cli",
+    "apm",
+    "traces",
+    "logs",
+    "monitors",
+    "observability",
+    "typescript"
+  ],
   "bin": {
-    "dd-cli": "bin/dd-cli.ts"
+    "dd-cli": "dist/dd-cli.js"
   },
   "files": [
-    "bin/",
-    "src/",
+    "dist/",
     "README.md",
     "README-ko.md"
   ],
   "scripts": {
-    "start": "tsx bin/dd-cli.ts",
+    "build": "tsup",
+    "postbuild": "node -e \"require('fs').chmodSync('dist/dd-cli.js',0o755)\"",
+    "dev": "tsx bin/dd-cli.ts",
+    "prepublishOnly": "npm run build",
+    "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@datadog/datadog-api-client": "^1.53.0",
     "commander": "^14.0.1",
-    "open": "^11.0.0",
-    "tsx": "^4.19.3"
+    "open": "^11.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.2"
   },
   "engines": {

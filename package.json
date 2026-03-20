@@ -1,6 +1,6 @@
 {
   "name": "datadog-cli-ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript CLI wrapper for Datadog API — logs, traces, events, monitors with OAuth2 & API key auth",
   "type": "module",
   "license": "MIT",
